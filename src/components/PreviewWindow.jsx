@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Monitor, RefreshCcw, Terminal, Box } from "lucide-react";
+import { RefreshCcw, Terminal, Box } from "lucide-react";
 
 export default function PreviewWindow({ generatedCode }) {
   const [srcDoc, setSrcDoc] = useState("");
@@ -9,22 +9,16 @@ export default function PreviewWindow({ generatedCode }) {
     if (!generatedCode) return;
 
     let code = generatedCode
-      // remove markdown blocks
       .replace(/```[\s\S]*?```/g, (match) =>
         match.replace(/```jsx|```js|```javascript|```/g, "")
       )
-
-      // remove headings / garbage
       .replace(/^#+.*$/gm, "")
       .replace(/^---.*$/gm, "")
       .replace(/^\d+️⃣.*$/gm, "")
       .replace(/^Step\s+\d+.*$/gm, "")
-
-      // remove imports/exports
       .replace(/import[\s\S]*?from\s+['"].*?['"];?/g, "")
       .replace(/export\s+default\s+function\s+App/g, "function App")
       .replace(/export\s+default/g, "")
-
       .trim();
 
     const html = `
@@ -32,14 +26,10 @@ export default function PreviewWindow({ generatedCode }) {
 <html>
 <head>
   <meta charset="UTF-8" />
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <style>
     body { margin:0; font-family:sans-serif; background:#f8fafc; }
   </style>
@@ -82,24 +72,19 @@ export default function PreviewWindow({ generatedCode }) {
   }, [generatedCode]);
 
   return (
-    <main className="flex-1 flex flex-col h-screen bg-[#f8fafc] border-l">
-      {/* Header */}
-      <header className="h-14 flex items-center justify-between px-4 bg-white border-b">
-        <div className="flex items-center gap-2">
-          <Monitor className="w-4 h-4 text-indigo-600" />
-          <span className="font-bold">Live Preview</span>
-        </div>
+    <main className="flex-1 flex flex-col h-full bg-[#f8fafc] border-l">
 
+      {/* Preview Area */}
+      <div className="flex-1 p-3 relative">
+
+        {/* Refresh Button */}
         <button
           onClick={() => setKey((k) => k + 1)}
-          className="p-2 hover:bg-slate-100 rounded"
+          className="absolute top-3 right-3 z-10 bg-white border p-2 rounded-lg shadow hover:bg-slate-50"
         >
           <RefreshCcw className="w-4 h-4" />
         </button>
-      </header>
 
-      {/* Preview */}
-      <div className="flex-1 p-3">
         {!generatedCode ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed rounded-xl">
             <Box className="w-10 h-10 opacity-30 mb-2" />
@@ -116,7 +101,8 @@ export default function PreviewWindow({ generatedCode }) {
         )}
       </div>
 
-      <div className="p-2 text-xs text-slate-400 flex justify-between">
+      {/* Footer */}
+      <div className="p-2 text-xs text-slate-400 flex justify-between border-t bg-white">
         <span className="flex items-center gap-1">
           <Terminal className="w-3 h-3" />
           Sandbox Runtime
@@ -126,5 +112,7 @@ export default function PreviewWindow({ generatedCode }) {
     </main>
   );
 }
+
+
 
 // ALL OK
