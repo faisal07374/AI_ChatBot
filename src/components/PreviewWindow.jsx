@@ -3,23 +3,41 @@ import { RefreshCcw, Terminal, Box } from "lucide-react";
 
 export default function PreviewWindow({ generatedCode }) {
   const [srcDoc, setSrcDoc] = useState("");
-  const [key, setKey] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  // =========================
+  // SAFE CODE CLEANER
+  // =========================
+  const cleanCode = (input = "") => {
+    return input
+      // remove markdown blocks safely
+      .replace(/```jsx|```js|```javascript|```/g, "")
+      .replace(/```/g, "")
+
+      // remove headers / separators
+      .replace(/^#+.*$/gm, "")
+      .replace(/^---.*$/gm, "")
+
+      // remove emoji steps
+      .replace(/^\d+️⃣.*$/gm, "")
+      .replace(/^Step\s+\d+.*$/gm, "")
+
+      // remove imports (safer version)
+      .replace(/import\s+.*?from\s+['"].*?['"];?/g, "")
+
+      // remove export default only (keep function)
+      .replace(/export\s+default/g, "")
+
+      .trim();
+  };
+
+  // =========================
+  // RENDER PREVIEW
+  // =========================
   useEffect(() => {
     if (!generatedCode) return;
 
-    let code = generatedCode
-      .replace(/```[\s\S]*?```/g, (match) =>
-        match.replace(/```jsx|```js|```javascript|```/g, "")
-      )
-      .replace(/^#+.*$/gm, "")
-      .replace(/^---.*$/gm, "")
-      .replace(/^\d+️⃣.*$/gm, "")
-      .replace(/^Step\s+\d+.*$/gm, "")
-      .replace(/import[\s\S]*?from\s+['"].*?['"];?/g, "")
-      .replace(/export\s+default\s+function\s+App/g, "function App")
-      .replace(/export\s+default/g, "")
-      .trim();
+    const code = cleanCode(generatedCode);
 
     const html = `
 <!DOCTYPE html>
@@ -46,22 +64,23 @@ export default function PreviewWindow({ generatedCode }) {
 
       ${code}
 
-      let Component = typeof App !== "undefined" ? App : null;
-
-      if (!Component) {
-        Component = () => (
-          <div style={{ padding: 20, color: "red" }}>
-            Invalid AI output
-          </div>
-        );
-      }
+      let Component =
+        typeof App !== "undefined"
+          ? App
+          : () => (
+              <div style={{ padding: 20, color: "red" }}>
+                No valid App component found
+              </div>
+            );
 
       const root = ReactDOM.createRoot(document.getElementById("root"));
       root.render(<Component />);
 
     } catch (err) {
       document.getElementById("root").innerHTML =
-        "<pre style='color:red;padding:20px'>" + err.message + "</pre>";
+        "<pre style='color:red;padding:20px'>" +
+        err.message +
+        "</pre>";
     }
   </script>
 </body>
@@ -69,22 +88,26 @@ export default function PreviewWindow({ generatedCode }) {
 `;
 
     setSrcDoc(html);
+
+    // ✅ FORCE iframe refresh even if same code arrives
+    setRefreshKey((k) => k + 1);
   }, [generatedCode]);
 
   return (
     <main className="flex-1 flex flex-col h-full bg-[#f8fafc] border-l">
 
-      {/* Preview Area */}
+      {/* PREVIEW */}
       <div className="flex-1 p-3 relative">
 
-        {/* Refresh Button */}
+        {/* REFRESH BUTTON */}
         <button
-          onClick={() => setKey((k) => k + 1)}
+          onClick={() => setRefreshKey((k) => k + 1)}
           className="absolute top-3 right-3 z-10 bg-white border p-2 rounded-lg shadow hover:bg-slate-50"
         >
           <RefreshCcw className="w-4 h-4" />
         </button>
 
+        {/* EMPTY STATE */}
         {!generatedCode ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed rounded-xl">
             <Box className="w-10 h-10 opacity-30 mb-2" />
@@ -92,7 +115,7 @@ export default function PreviewWindow({ generatedCode }) {
           </div>
         ) : (
           <iframe
-            key={key}
+            key={refreshKey}   // ✅ FORCE FULL RELOAD
             title="preview"
             sandbox="allow-scripts allow-same-origin"
             className="w-full h-full border rounded-xl bg-white"
@@ -101,18 +124,17 @@ export default function PreviewWindow({ generatedCode }) {
         )}
       </div>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <div className="p-2 text-xs text-slate-400 flex justify-between border-t bg-white">
         <span className="flex items-center gap-1">
           <Terminal className="w-3 h-3" />
           Sandbox Runtime
         </span>
-        <span>JSX Live</span>
+        <span>JSX Live Preview</span>
       </div>
     </main>
   );
 }
-
 
 
 // ALL OK
